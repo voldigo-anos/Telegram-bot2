@@ -56,10 +56,14 @@ function initAutoCleanup(config) {
                 "./tmp"
         ];
 
-        // Ensure directories exist
+        // Ensure directories exist (un dossier non creable ne doit jamais empecher le bot de demarrer)
         targetDirs.forEach(dir => {
                 const absolute = path.resolve(process.cwd(), dir);
-                fs.ensureDirSync(absolute);
+                try {
+                        fs.ensureDirSync(absolute);
+                } catch (err) {
+                        log.warn("AUTO_CLEANUP", `Cannot create ${absolute} (${err.code || err.message}). Skipping this folder.`);
+                }
         });
 
         cron.schedule(expression, () => {
