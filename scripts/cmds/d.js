@@ -48,8 +48,13 @@ async function entry({ output, input, threadsDB, args, }) {
 }
 async function event({ output, input, threadsDB }) {
     try {
-        const cache = await threadsDB.getCache(input.threadID);
-        if (cache.autodl === false) {
+        if (!threadsDB) return;
+        const prompt0 = String(input);
+        if (!/^https:\/\/(www\.)?(facebook\.com|fb\.watch)/.test(prompt0)) return;
+        let cache = {};
+        if (typeof threadsDB.getCache === "function") cache = await threadsDB.getCache(input.threadID);
+        else if (typeof threadsDB.get === "function") cache = (await threadsDB.get(input.threadID).catch(() => ({}))) || {};
+        if (cache?.autodl === false || cache?.data?.autodl === false) {
             return;
         }
         const prompt = String(input);
@@ -78,6 +83,6 @@ async function event({ output, input, threadsDB }) {
         }
     }
     catch (err) {
-        output.replyStyled(require("util").inspect(err), exports.style);
+        console.error("[autodl]", err?.message || err);
     }
 }
