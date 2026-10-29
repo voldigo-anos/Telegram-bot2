@@ -34,7 +34,22 @@ function convertLangObj(languageData) {
 
 function getText(head, key, ...args) {
 	let langObj;
-	if (typeof head == "object") {
+	// Command object passed (e.g. getLang from a command): read its own "langs"
+	if (head && typeof head == "object" && (head.langs || head.config)) {
+		const langCode = global.GoatBot?.config?.language || "en";
+		const langs = head.langs || {};
+		let text = langs[langCode]?.[key] ?? langs.en?.[key];
+		if (text === undefined) {
+			const firstLang = Object.values(langs)[0];
+			text = firstLang?.[key];
+		}
+		if (text === undefined)
+			return `Can't find text: "${head.config?.name}.${key}"`;
+		for (let i = args.length - 1; i >= 0; i--)
+			text = String(text).replace(new RegExp(`%${i + 1}`, 'g'), args[i]);
+		return text;
+	}
+	if (head && typeof head == "object") {
 		let pathLanguageFile = path.normalize(`${__dirname}/${head.lang}.lang`);
 		head = head.head;
 		if (!fs.existsSync(pathLanguageFile)) {
