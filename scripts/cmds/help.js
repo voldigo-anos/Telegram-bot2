@@ -99,6 +99,23 @@ module.exports = {
 		}
 		msg += `\n➥ Use: ${prefix}help [command name] for details\n➥Use: ${prefix}callad to talk with bot admins '_'`;
 
-		return message.reply(msg);
+		// Telegram limite un message a 4096 caracteres : envoi en plusieurs parties
+		const MAX = 3800;
+		const parts = [];
+		let current = "";
+		for (const block of msg.split(/(?=\n╭──)/)) {
+			if ((current + block).length > MAX && current) {
+				parts.push(current);
+				current = "";
+			}
+			current += block;
+		}
+		if (current) parts.push(current);
+		let last;
+		for (const part of parts) {
+			for (let i = 0; i < part.length; i += 4000)
+				last = await message.reply(part.slice(i, i + 4000));
+		}
+		return last;
 	}
 };
