@@ -127,6 +127,18 @@ const memoryManager = new MemoryManager();
         try {
                 log.info("SYSTEM", "Starting GrammChatBot Telegram Engine...");
 
+                // 0. Start the web server FIRST so the host's health check (port) passes quickly,
+                //    even while the 300+ commands are still loading.
+                const tokenManager = require("./bot/telegram/tokenManager.js");
+                if (config.dashBoard?.enable !== false) {
+                        try {
+                                const startDashboard = require("./dashboard/app.js");
+                                await startDashboard(tokenManager);
+                        } catch (e) {
+                                log.error("DASHBOARD", `Failed to start Web Dashboard: ${e.message}`);
+                        }
+                }
+
                 // 1. Initialize Auto Cleanup Cron Job (every 30 minutes)
                 const { initAutoCleanup } = require("./bot/cron/autoCleanup.js");
                 initAutoCleanup(config);
@@ -140,7 +152,6 @@ const memoryManager = new MemoryManager();
                 await loadScripts(global.db);
 
                 // 3. Initialize Telegram Token Manager & Start Polling
-                const tokenManager = require("./bot/telegram/tokenManager.js");
                 tokenManager.init(config.telegramTokens);
 
                 const { handleTelegramEvent } = require("./bot.js");
@@ -155,16 +166,6 @@ const memoryManager = new MemoryManager();
                         tokenManager.startPolling(bot);
                 } else {
                         log.warn("SYSTEM", "Bot instance could not be started. Check telegramTokens in config.json.");
-                }
-
-                // 4. Start Express Web Dashboard
-                if (config.dashBoard?.enable !== false) {
-                        try {
-                                const startDashboard = require("./dashboard/app.js");
-                                await startDashboard(tokenManager);
-                        } catch (e) {
-                                log.error("DASHBOARD", `Failed to start Web Dashboard: ${e.message}`);
-                        }
                 }
 
         } catch (err) {
